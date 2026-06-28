@@ -1,6 +1,6 @@
 {
   "name": "mijia-control-codex",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Codex plugin that routes Xiaomi and Mijia smart-home work through mijia-control only.",
   "author": {
     "name": "Mijia Control Codex Plugin Contributors",

@@ -49,7 +49,15 @@ Expected healthy output includes:
 If Python or `mijia-control Python modules` is missing, run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
+```
+
+`check-runtime.ps1` intentionally separates plugin/runtime readiness from real device readiness. A machine may pass Git, Python, module, and CLI checks while still reporting missing `MIJIA_API_URL`, missing `MIJIA_TOKEN`, or unreachable API until the upstream Flask service is started and the user logs in locally.
+
+For CI or a controlled local check where the upstream package is installed in a venv that is not on PATH, pass the expected Python path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\check-runtime.ps1 -ExpectedPython C:\path\to\mijia-control\venv\Scripts\python.exe
 ```
 
 ## Codex Manifest Validator

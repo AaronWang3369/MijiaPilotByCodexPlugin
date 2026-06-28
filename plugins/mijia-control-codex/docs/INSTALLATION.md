@@ -34,10 +34,10 @@ Windows helper:
 
 ```powershell
 cd path\to\MijiaPilotByCodexPlugin
-powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
 ```
 
-The helper clones upstream `mijia-control` to `%USERPROFILE%\mijia-control`, creates a venv, installs `.[mcp]`, verifies imports, and prints the venv Python path.
+The helper checks Git, finds a real Python 3.10+ interpreter, optionally installs Python 3.12 with `winget`, clones upstream `mijia-control` to `%USERPROFILE%\mijia-control`, creates a venv, installs `.[mcp]`, verifies imports, and prints the venv Python path.
 
 ## Configure Upstream
 
@@ -114,4 +114,12 @@ On Windows, run:
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\check-runtime.ps1
 ```
 
-This reports whether Git, Python, upstream `mijia-control` imports, the CLI, `MIJIA_API_URL`, `MIJIA_TOKEN`, and API reachability are ready.
+This reports whether Git, Python, upstream `mijia-control` imports, the CLI or default venv CLI, `MIJIA_API_URL`, `MIJIA_TOKEN`, and API reachability are ready.
+
+If it reports missing Python or missing upstream modules, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
+```
+
+If it reports missing `MIJIA_API_URL`, `MIJIA_TOKEN`, or API reachability, install/start upstream `mijia-control`, log in, then set those variables in the environment that launches Codex.

@@ -102,7 +102,9 @@ The upstream Flask service must already be running and reachable at `MIJIA_API_U
 ## Failure Handling
 
 - If `mijia-control` is missing, tell the user to install upstream with `pip install -e ".[mcp]"` from a local clone.
-- If `python` is missing or Codex cannot import `mcp_server`, run the plugin Windows helper `scripts/setup-windows.ps1` or point the local `.mcp.json` command at the upstream venv Python.
+- On Windows, if `python`, `%USERPROFILE%\mijia-control\venv`, or `mcp_server` is missing, run `powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget` from the plugin repository root, then run `scripts\check-runtime.ps1`.
+- If plain `python` is missing but `%USERPROFILE%\mijia-control\venv\Scripts\python.exe` exists, point the local `.mcp.json` command at that venv Python path.
+- If `MIJIA_API_URL` or `MIJIA_TOKEN` is missing, explain that the user must start upstream `mijia-control`, log in locally, and provide those values in the environment used by Codex.
 - If the MCP server starts but tool calls fail with authentication errors, ask the user to refresh `MIJIA_TOKEN` through `mijia-control login`.
 - If device-changing calls fail, inspect device detail and supported properties/actions through `get_device` before retrying.
 - If real devices or a Xiaomi account are unavailable, report that real-device verification is not possible instead of claiming success.

@@ -1,7 +1,8 @@
 param(
   [string]$InstallDir = "$env:USERPROFILE\mijia-control",
   [string]$RepoUrl = "https://github.com/handsomejustin/mijia-control.git",
-  [switch]$SkipClone
+  [switch]$SkipClone,
+  [switch]$InstallPythonWithWinget
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,26 +21,57 @@ function Require-Command {
 }
 
 function Resolve-PythonCommand {
-  $python = Get-Command python -ErrorAction SilentlyContinue
-  if ($python) {
-    & $python.Source -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" 2>$null
+  function Test-Python {
+    param(
+      [string]$Command,
+      [string[]]$Args = @(),
+      [string]$Display = $Command
+    )
+
+    if (-not $Command) {
+      return $null
+    }
+
+    & $Command @Args -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" 2>$null
     if ($LASTEXITCODE -eq 0) {
       return @{
-        Command = $python.Source
-        Args = @()
-        Display = $python.Source
+        Command = $Command
+        Args = $Args
+        Display = $Display
       }
+    }
+
+    return $null
+  }
+
+  $python = Get-Command python -ErrorAction SilentlyContinue
+  if ($python) {
+    $result = Test-Python -Command $python.Source
+    if ($result) {
+      return $result
     }
   }
 
   $py = Get-Command py -ErrorAction SilentlyContinue
   if ($py) {
-    & $py.Source -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" 2>$null
-    if ($LASTEXITCODE -eq 0) {
-      return @{
-        Command = $py.Source
-        Args = @("-3")
-        Display = "$($py.Source) -3"
+    $result = Test-Python -Command $py.Source -Args @("-3") -Display "$($py.Source) -3"
+    if ($result) {
+      return $result
+    }
+  }
+
+  $knownPaths = @(
+    "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe",
+    "$env:LOCALAPPDATA\Programs\Python\Python311\python.exe",
+    "$env:ProgramFiles\Python312\python.exe",
+    "$env:ProgramFiles\Python311\python.exe"
+  )
+
+  foreach ($candidate in $knownPaths) {
+    if (Test-Path -LiteralPath $candidate) {
+      $result = Test-Python -Command $candidate
+      if ($result) {
+        return $result
       }
     }
   }
@@ -48,7 +80,18 @@ function Resolve-PythonCommand {
 }
 
 Require-Command git "Install Git for Windows, for example: winget install -e --id Git.Git" | Out-Null
-$pythonCommand = Resolve-PythonCommand
+try {
+  $pythonCommand = Resolve-PythonCommand
+} catch {
+  if (-not $InstallPythonWithWinget) {
+    throw "$($_.Exception.Message). To let this script install Python with winget, rerun it with -InstallPythonWithWinget."
+  }
+
+  Require-Command winget "Install Python manually from https://www.python.org/downloads/windows/ if winget is unavailable." | Out-Null
+  winget install -e --id Python.Python.3.12 --accept-package-agreements --accept-source-agreements
+  $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+  $pythonCommand = Resolve-PythonCommand
+}
 
 if (-not (Test-Path -LiteralPath $InstallDir)) {
   if ($SkipClone) {

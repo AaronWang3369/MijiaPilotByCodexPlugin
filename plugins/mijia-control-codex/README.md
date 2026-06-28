@@ -67,11 +67,11 @@ pip install -e ".[mcp]"
 Or use the plugin helper on Windows:
 
 ```powershell
-cd plugins\mijia-control-codex
-powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows.ps1
+cd path\to\MijiaPilotByCodexPlugin
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
 ```
 
-This installs upstream `mijia-control` into `%USERPROFILE%\mijia-control\venv` and prints the venv Python path to use if Codex cannot find `python`.
+This installs Python 3.12 with `winget` when Python is missing, clones upstream `mijia-control` into `%USERPROFILE%\mijia-control`, creates `%USERPROFILE%\mijia-control\venv`, installs `.[mcp]`, verifies imports, and prints the venv Python path to use if Codex cannot find `python`.
 
 Start the upstream web service and complete upstream account/device setup:
 
@@ -144,6 +144,14 @@ Important: `codex plugin list` showing `mijia-control-codex@personal installed, 
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\check-runtime.ps1
 ```
 
+If the output reports missing Python or missing upstream modules, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
+```
+
+Then run `check-runtime.ps1` again. A plugin can be installed and enabled while device listing still fails if `MIJIA_API_URL`, `MIJIA_TOKEN`, or the upstream web service are not ready.
+
 ## Use
 
 Ask Codex for Mijia work directly:
@@ -183,7 +191,7 @@ In this repository, the verification script checks:
 
 During local development, the upstream project was also installed into a temporary virtual environment with `pip install -e ".[mcp]"`. `mijia-control --help`, Python imports for `mcp_server` and `mijia_cli`, and an MCP stdio `initialize` plus `list_tools` session were verified. The MCP session returned 12 tools matching the upstream source.
 
-Version `0.1.1` adds Windows runtime diagnostics for machines where the Codex plugin is installed but Python or upstream `mijia-control` is missing, and makes the local verifier tolerate CRLF line endings in skill frontmatter.
+Version `0.1.2` improves Windows runtime bootstrap for machines where the Codex plugin is installed but Python, upstream `mijia-control`, the default venv, API environment variables, or the upstream web service are missing. It also keeps the local verifier tolerant of CRLF line endings in skill frontmatter.
 
 ## License
 
