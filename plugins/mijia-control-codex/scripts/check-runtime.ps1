@@ -186,6 +186,6 @@ try {
   if ($response -and $response.StatusCode) {
     Write-Check "mijia-control API reachability" $true "$healthUrl returned HTTP $([int]$response.StatusCode), so the service is reachable"
   } else {
-    Write-Check "mijia-control API reachability" $false "Could not connect to $healthUrl. The web service may be stopped."
+    Write-Check "mijia-control API reachability" $false "Could not connect to $healthUrl. Run scripts\ensure_mijia_service.py or start upstream with python run.py."
   }
 }

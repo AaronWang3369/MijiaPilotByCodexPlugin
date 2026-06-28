@@ -32,7 +32,13 @@ If plain `python` is still unavailable to Codex, copy the venv Python path print
 
 If the CLI is not on PATH but `check-runtime.ps1` reports `%USERPROFILE%\mijia-control\venv\Scripts\mijia-control.exe`, use that absolute path or activate the venv before running CLI commands.
 
-After the upstream runtime is installed, start the web service in a separate terminal:
+After the upstream runtime is installed, let the plugin helper start the local service:
+
+```powershell
+C:\Users\<you>\mijia-control\venv\Scripts\python.exe .\plugins\mijia-control-codex\scripts\ensure_mijia_service.py
+```
+
+Or start the web service manually in a separate terminal:
 
 ```powershell
 cd $env:USERPROFILE\mijia-control
@@ -116,7 +122,20 @@ Then refresh `MIJIA_TOKEN` in the environment used by Codex.
 
 Symptom: connection refused to `127.0.0.1:5000`.
 
-Fix:
+Fix with autostart:
+
+```bash
+python scripts/ensure_mijia_service.py
+```
+
+If the helper cannot find upstream, set the checkout path:
+
+```bash
+export MIJIA_CONTROL_DIR=/path/to/mijia-control
+python scripts/ensure_mijia_service.py
+```
+
+Manual fix:
 
 ```bash
 cd path/to/mijia-control
@@ -134,6 +153,8 @@ Windows PowerShell:
 ```powershell
 $env:MIJIA_API_URL
 ```
+
+If you intentionally run a remote upstream service, the helper will not start a local service for that URL. Confirm the remote service separately.
 
 ## Device IDs Or Property Names Are Unknown
 

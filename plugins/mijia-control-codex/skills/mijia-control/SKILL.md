@@ -51,14 +51,44 @@ Observed CLI groups:
 ## Required Workflow
 
 1. Confirm that the user is asking about Xiaomi/Mijia smart-home work.
-2. Use only one of these paths:
+2. Before any MCP tool call or CLI operation, ensure the local upstream `mijia-control` web service is reachable. Prefer `scripts/ensure_mijia_service.py`; the optional MCP wrapper runs the same check automatically.
+3. Use only one of these paths:
    - MCP tools exposed by this plugin's `mijia-control` MCP server.
    - The upstream `mijia-control` CLI.
    - The upstream `python -m mcp_server` server process.
-3. Prefer read-only commands first: list homes, list devices, inspect device details, read current properties.
-4. Before changing real devices, state the intended target and action in concrete terms.
-5. Never invent device IDs, home IDs, scene IDs, property names, or action names. Discover them with `list_devices`, `get_device`, `list_scenes`, or the CLI equivalents.
-6. Do not expose or repeat `MIJIA_TOKEN`, Xiaomi account credentials, QR payloads, home IDs, device IDs, or scene IDs in final answers unless the user explicitly asks for local debugging data and sharing it is necessary.
+4. Prefer read-only commands first: list homes, list devices, inspect device details, read current properties.
+5. Before changing real devices, state the intended target and action in concrete terms.
+6. Never invent device IDs, home IDs, scene IDs, property names, or action names. Discover them with `list_devices`, `get_device`, `list_scenes`, or the CLI equivalents.
+7. Do not expose or repeat `MIJIA_TOKEN`, Xiaomi account credentials, QR payloads, home IDs, device IDs, or scene IDs in final answers unless the user explicitly asks for local debugging data and sharing it is necessary.
+
+## Service Autostart
+
+For local Codex sessions, start the upstream web service automatically when the request needs Mijia state or device control and `MIJIA_API_URL` points to localhost.
+
+Use this helper before CLI calls when the service may be stopped:
+
+```bash
+python scripts/ensure_mijia_service.py
+```
+
+The helper checks `MIJIA_API_URL` or the upstream default `http://127.0.0.1:5000/api`, finds the upstream checkout with `run.py`, and starts `python run.py` in the background. It only checks the local upstream service health endpoint; it does not enumerate, read, or change devices. It will not start a local service for non-local API URLs.
+
+Discovery order for the upstream checkout:
+
+- `MIJIA_CONTROL_DIR`
+- current working directory
+- `~/mijia-control`
+- the editable-install location of `mijia_cli`
+
+Useful optional variables:
+
+```bash
+MIJIA_CONTROL_DIR=/path/to/mijia-control
+MIJIA_CONTROL_PYTHON=/path/to/mijia-control/venv/bin/python
+MIJIA_CONTROL_AUTOSTART=0
+```
+
+Set `MIJIA_CONTROL_AUTOSTART=0` only when the user explicitly wants to manage the service manually.
 
 ## Safe Command Examples
 
@@ -96,12 +126,13 @@ MIJIA_API_URL=http://127.0.0.1:5000/api
 MCP_TRANSPORT=stdio
 ```
 
-The upstream MCP server reads `MIJIA_TOKEN` from the environment. On machines configured with the optional `scripts/mijia-mcp-wrapper.py`, the wrapper can reuse the upstream CLI token file created by `mijia-control login` at `~/.config/mijia-control/token.json`. The upstream Flask service must already be running and reachable at `MIJIA_API_URL`.
+The upstream MCP server reads `MIJIA_TOKEN` from the environment. On machines configured with the optional `scripts/mijia-mcp-wrapper.py`, the wrapper can reuse the upstream CLI token file created by `mijia-control login` at `~/.config/mijia-control/token.json` and auto-start the local upstream Flask service before launching MCP.
 
 ## Failure Handling
 
 - If `mijia-control` is missing, tell the user to install upstream with `pip install -e ".[mcp]"` from a local clone.
 - On Windows, if `python`, `%USERPROFILE%\mijia-control\venv`, or `mcp_server` is missing, run `powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget` from the plugin repository root, then run `scripts\check-runtime.ps1`.
+- If the web service is stopped and `MIJIA_API_URL` is local, run `scripts/ensure_mijia_service.py` or use the MCP wrapper so startup happens automatically.
 - If plain `python` is missing but `%USERPROFILE%\mijia-control\venv\Scripts\python.exe` exists, point the local `.mcp.json` command at that venv Python path.
 - If `MIJIA_TOKEN` is missing but the CLI token file exists, use the plugin wrapper or upstream CLI rather than asking the user to paste token values.
 - If neither `MIJIA_TOKEN` nor the CLI token file exists, explain that the user must start upstream `mijia-control` and log in locally.

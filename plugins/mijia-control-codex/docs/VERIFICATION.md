@@ -52,13 +52,29 @@ If Python or `mijia-control Python modules` is missing, run:
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
 ```
 
-`check-runtime.ps1` intentionally separates plugin/runtime readiness from real device readiness. A machine may pass Git, Python, module, CLI, API URL, and token checks while still reporting unreachable API until the upstream Flask service is started. The token check accepts either `MIJIA_TOKEN` or the CLI token file created by `mijia-control login`.
+`check-runtime.ps1` intentionally separates plugin/runtime readiness from real device readiness. A machine may pass Git, Python, module, CLI, API URL, and token checks while still reporting unreachable API until the upstream Flask service is started or autostarted. The token check accepts either `MIJIA_TOKEN` or the CLI token file created by `mijia-control login`.
 
 For CI or a controlled local check where the upstream package is installed in a venv that is not on PATH, pass the expected Python path:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\check-runtime.ps1 -ExpectedPython C:\path\to\mijia-control\venv\Scripts\python.exe
 ```
+
+## Service Autostart Check
+
+From the plugin root:
+
+```bash
+python scripts/ensure_mijia_service.py
+```
+
+Expected healthy output includes:
+
+```text
+mijia-control service is reachable
+```
+
+If the service is stopped, the helper should find a local upstream checkout and start `python run.py` in the background. It writes the service PID and log file under the local user state directory. This validates local service startup only; it does not validate real Xiaomi account binding or device control.
 
 ## Codex Manifest Validator
 
@@ -92,6 +108,8 @@ For the optional wrapper that can reuse the CLI token file:
 ```bash
 python scripts/mijia-mcp-wrapper.py
 ```
+
+The wrapper also calls the service autostart helper before launching upstream MCP. It still executes the upstream `mcp_server` module for all MCP tools.
 
 For a stronger local MCP check, use the MCP Python SDK to initialize a stdio client session and list tools. The expected tool names are:
 

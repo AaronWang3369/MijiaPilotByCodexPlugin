@@ -145,7 +145,9 @@ try {
 "@
   Write-Host ""
   Write-Host "Next steps:"
-  Write-Host "1. Start upstream web service from $InstallDir with: .\venv\Scripts\python.exe run.py"
+  Write-Host "1. The optional MCP wrapper can auto-start the local upstream web service."
+  Write-Host "   To test it now, run from the plugin root: $venvPython .\scripts\ensure_mijia_service.py"
+  Write-Host "   Or start manually from $InstallDir with: .\venv\Scripts\python.exe run.py"
   Write-Host "2. Log in with: .\venv\Scripts\mijia-control.exe login"
   Write-Host "3. Start a new Codex thread so plugin Skill/MCP config is loaded."
   Write-Host "4. If Codex still cannot start MCP, add a local MCP command with the printed venv Python and wrapper paths."

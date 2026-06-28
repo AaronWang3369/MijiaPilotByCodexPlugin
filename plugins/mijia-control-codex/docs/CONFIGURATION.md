@@ -14,9 +14,12 @@ Runtime variables:
 MIJIA_API_URL=http://127.0.0.1:5000/api
 MIJIA_TOKEN=replace-with-local-jwt-access-token
 MCP_TRANSPORT=stdio
+MIJIA_CONTROL_DIR=/path/to/mijia-control
+MIJIA_CONTROL_PYTHON=/path/to/mijia-control/venv/bin/python
+MIJIA_CONTROL_AUTOSTART=1
 ```
 
-`MIJIA_API_URL` defaults upstream to `http://127.0.0.1:5000/api`. `MIJIA_TOKEN` can be provided as an environment variable. On machines using the optional wrapper, the wrapper can reuse the token file created by `mijia-control login`.
+`MIJIA_API_URL` defaults upstream to `http://127.0.0.1:5000/api`. `MIJIA_TOKEN` can be provided as an environment variable. On machines using the optional wrapper, the wrapper can reuse the token file created by `mijia-control login` and can start the local upstream web service.
 
 ## MCP Configuration
 
@@ -45,13 +48,32 @@ to a machine-local absolute path such as:
 "command": "C:\\Users\\Administrator\\mijia-control\\venv\\Scripts\\python.exe"
 ```
 
-On machines where the Codex process cannot see the venv Python, or where you want MCP to reuse the token created by `mijia-control login`, add a local MCP server that uses the optional wrapper with an absolute plugin path:
+On machines where the Codex process cannot see the venv Python, or where you want MCP to reuse the token created by `mijia-control login` and autostart the local upstream service, add a local MCP server that uses the optional wrapper with an absolute plugin path:
 
 ```powershell
 codex mcp add mijia-control --env MCP_TRANSPORT=stdio --env MIJIA_API_URL=http://127.0.0.1:5000/api -- C:\Users\you\mijia-control\venv\Scripts\python.exe C:\path\to\plugin\scripts\mijia-mcp-wrapper.py
 ```
 
 Do not commit machine-local paths to the public plugin repository.
+
+## Service Autostart Configuration
+
+The plugin helper starts only the local upstream Flask service. It does not call Xiaomi Cloud, enumerate devices, or change device state.
+
+Run it directly when testing:
+
+```bash
+python scripts/ensure_mijia_service.py
+```
+
+Configuration:
+
+- `MIJIA_CONTROL_DIR`: upstream checkout containing `run.py`.
+- `MIJIA_CONTROL_PYTHON`: Python executable to use for `run.py`.
+- `MIJIA_CONTROL_AUTOSTART`: set to `0`, `false`, `no`, or `off` to disable startup.
+- `MIJIA_CONTROL_CODEX_STATE_DIR`: optional directory for service PID and log files.
+
+The helper starts a service only for local API URLs such as `http://127.0.0.1:5000/api` or `http://localhost:5000/api`. For remote `MIJIA_API_URL` values, it only checks reachability.
 
 ## CLI Configuration
 

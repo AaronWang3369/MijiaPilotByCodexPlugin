@@ -13,7 +13,8 @@ This plugin does not implement its own Xiaomi Cloud client, LAN protocol client,
 - `docs/`: installation, setup, verification, troubleshooting, security, privacy, and publishing notes.
 - `examples/`: sample commands and conversations.
 - `scripts/verify-plugin.mjs`: local structure and privacy validation.
-- `scripts/mijia-mcp-wrapper.py`: optional local MCP wrapper that starts upstream MCP and reuses the local CLI token file when `MIJIA_TOKEN` is not set.
+- `scripts/ensure_mijia_service.py`: local helper that checks and starts the upstream `mijia-control` Flask service.
+- `scripts/mijia-mcp-wrapper.py`: optional local MCP wrapper that starts the upstream service if needed, starts upstream MCP, and reuses the local CLI token file when `MIJIA_TOKEN` is not set.
 - `scripts/check-runtime.ps1` and `scripts/setup-windows.ps1`: Windows diagnostics and upstream runtime setup helpers.
 
 ## Upstream Facts Verified
@@ -74,10 +75,16 @@ powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\s
 
 This installs Python 3.12 with `winget` when Python is missing, clones upstream `mijia-control` into `%USERPROFILE%\mijia-control`, creates `%USERPROFILE%\mijia-control\venv`, installs `.[mcp]`, verifies imports, and prints the venv Python path to use if Codex cannot find `python`.
 
-Start the upstream web service and complete upstream account/device setup:
+Complete upstream account/device setup. You can start the upstream web service manually:
 
 ```bash
 python run.py
+```
+
+Or let the plugin helper start the local upstream service when Codex first needs it:
+
+```bash
+python scripts/ensure_mijia_service.py
 ```
 
 Then log in to the upstream service and obtain a local token:
@@ -139,7 +146,17 @@ The plugin declares this MCP server in `.mcp.json`:
 
 The `python` command must resolve to an environment where upstream `mijia-control` is installed. `env_vars` asks Codex to forward local `MIJIA_API_URL` and `MIJIA_TOKEN` into the stdio server process. If Codex cannot import `mcp_server`, install upstream into the Python environment Codex can see, or configure a machine-local MCP command that uses your venv Python.
 
-On Windows, the helper also prints a local MCP override using `scripts/mijia-mcp-wrapper.py`. That wrapper is optional. It still starts upstream `mcp_server`, but it can reuse the token file written by `mijia-control login` at `~/.config/mijia-control/token.json` when `MIJIA_TOKEN` is not set.
+On Windows, the helper also prints a local MCP override using `scripts/mijia-mcp-wrapper.py`. That wrapper is optional. It first ensures the local upstream Flask service is reachable, then starts upstream `mcp_server`. It can also reuse the token file written by `mijia-control login` at `~/.config/mijia-control/token.json` when `MIJIA_TOKEN` is not set.
+
+Service autostart is controlled by:
+
+```bash
+MIJIA_CONTROL_DIR=/path/to/mijia-control
+MIJIA_CONTROL_PYTHON=/path/to/mijia-control/venv/bin/python
+MIJIA_CONTROL_AUTOSTART=0
+```
+
+`MIJIA_CONTROL_AUTOSTART=0` disables automatic startup. The helper only starts a local service when `MIJIA_API_URL` points to localhost.
 
 Important: `codex plugin list` showing `mijia-control-codex@personal installed, enabled` only confirms that Codex installed this plugin. It does not install Python, upstream `mijia-control`, or your local Xiaomi/Mijia credentials. Run this on Windows to see what is missing:
 
@@ -153,7 +170,7 @@ If the output reports missing Python or missing upstream modules, run:
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
 ```
 
-Then run `check-runtime.ps1` again. A plugin can be installed and enabled while device listing still fails if the upstream web service is not running, no CLI token or `MIJIA_TOKEN` exists, or no Xiaomi account/devices have been bound in upstream `mijia-control`.
+Then run `check-runtime.ps1` again. A plugin can be installed and enabled while device listing still fails if no CLI token or `MIJIA_TOKEN` exists, no local upstream checkout can be found for autostart, or no Xiaomi account/devices have been bound in upstream `mijia-control`.
 
 ## Use
 
@@ -194,7 +211,7 @@ In this repository, the verification script checks:
 
 During local development, the upstream project was also installed into a temporary virtual environment with `pip install -e ".[mcp]"`. `mijia-control --help`, Python imports for `mcp_server` and `mijia_cli`, and an MCP stdio `initialize` plus `list_tools` session were verified. The MCP session returned 12 tools matching the upstream source.
 
-Version `0.1.3` improves Windows runtime detection by preferring the default upstream venv, treating the upstream default API URL as valid, and adding an optional MCP wrapper that can reuse the CLI token file created by `mijia-control login`. It also keeps the local verifier tolerant of CRLF line endings in skill frontmatter.
+Version `0.1.4` adds local upstream service autostart through `scripts/ensure_mijia_service.py` and updates the optional MCP wrapper so Codex can bring up the upstream Flask service before using MCP.
 
 ## License
 

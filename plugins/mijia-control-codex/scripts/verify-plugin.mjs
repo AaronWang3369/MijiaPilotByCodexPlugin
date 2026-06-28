@@ -84,6 +84,14 @@ const envTemplate = readText("config/mijia-control.env.example");
 if (envTemplate) {
   assert(envTemplate.includes("MIJIA_API_URL=http://127.0.0.1:5000/api"), "env template must include MIJIA_API_URL");
   assert(envTemplate.includes("MIJIA_TOKEN=replace-with-local-jwt-access-token"), "env template must use a token placeholder");
+  assert(envTemplate.includes("MIJIA_CONTROL_AUTOSTART=1"), "env template must document service autostart");
+}
+
+const serviceHelper = readText("scripts/ensure_mijia_service.py");
+if (serviceHelper) {
+  assert(serviceHelper.includes("MIJIA_CONTROL_AUTOSTART"), "service helper must support MIJIA_CONTROL_AUTOSTART");
+  assert(serviceHelper.includes("MIJIA_CONTROL_DIR"), "service helper must support MIJIA_CONTROL_DIR");
+  assert(serviceHelper.includes("run.py"), "service helper must start the upstream run.py entry point");
 }
 
 const marketplacePath = path.join(repoRoot, ".agents", "plugins", "marketplace.json");

@@ -1,9 +1,10 @@
-"""Start upstream mijia-control MCP with CLI token fallback.
+"""Start upstream mijia-control MCP with CLI token fallback and service autostart.
 
 The upstream CLI stores login data in ~/.config/mijia-control/token.json, but
 the upstream MCP server currently reads MIJIA_TOKEN only from the environment.
 This wrapper keeps all device-facing behavior in upstream mijia-control while
 allowing Codex MCP startup to reuse the token created by `mijia-control login`.
+It may also start the local upstream Flask service before launching MCP.
 """
 
 from __future__ import annotations
@@ -11,7 +12,13 @@ from __future__ import annotations
 import json
 import os
 import runpy
+import sys
 from pathlib import Path
+
+try:
+    from ensure_mijia_service import ensure_service
+except ImportError:
+    ensure_service = None  # type: ignore[assignment]
 
 
 def _load_cli_token() -> str | None:
@@ -38,6 +45,14 @@ def main() -> None:
         token = _load_cli_token()
         if token:
             os.environ["MIJIA_TOKEN"] = token
+
+    if ensure_service:
+        service_ok = ensure_service(api_url=os.environ["MIJIA_API_URL"], quiet=True, stream=sys.stderr)
+        if not service_ok:
+            print(
+                "mijia-control service is not reachable. MCP will still start, but tool calls may fail.",
+                file=sys.stderr,
+            )
 
     runpy.run_module("mcp_server", run_name="__main__")
 
