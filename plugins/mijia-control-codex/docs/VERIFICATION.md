@@ -26,6 +26,8 @@ This checks:
 - config templates do not contain obvious committed secrets.
 - marketplace entry points to `./plugins/mijia-control-codex`.
 
+The verifier accepts both LF and CRLF line endings in `SKILL.md`, so Windows checkouts should not fail the frontmatter check solely because Git converted line endings.
+
 ## Windows Runtime Checks
 
 From the repository root:

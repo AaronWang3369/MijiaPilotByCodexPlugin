@@ -183,7 +183,7 @@ In this repository, the verification script checks:
 
 During local development, the upstream project was also installed into a temporary virtual environment with `pip install -e ".[mcp]"`. `mijia-control --help`, Python imports for `mcp_server` and `mijia_cli`, and an MCP stdio `initialize` plus `list_tools` session were verified. The MCP session returned 12 tools matching the upstream source.
 
-Version `0.1.1` adds Windows runtime diagnostics for machines where the Codex plugin is installed but Python or upstream `mijia-control` is missing.
+Version `0.1.1` adds Windows runtime diagnostics for machines where the Codex plugin is installed but Python or upstream `mijia-control` is missing, and makes the local verifier tolerate CRLF line endings in skill frontmatter.
 
 ## License
 

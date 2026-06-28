@@ -73,7 +73,7 @@ if (mcp) {
 
 const skill = readText("skills/mijia-control/SKILL.md");
 if (skill) {
-  assert(skill.startsWith("---\n"), "Skill must start with YAML frontmatter");
+  assert(/^---\r?\n/.test(skill), "Skill must start with YAML frontmatter");
   assert(skill.includes("name: mijia-control"), "Skill frontmatter must name mijia-control");
   assert(skill.includes("description:"), "Skill frontmatter must include description");
   assert(skill.includes("must use `mijia-control` as the only device-facing interface"), "Skill must include only-through-mijia-control rule");
