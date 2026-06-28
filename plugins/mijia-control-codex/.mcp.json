@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "mijia-control": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_server"
+      ],
+      "env": {
+        "MCP_TRANSPORT": "stdio"
+      },
+      "env_vars": [
+        "MIJIA_API_URL",
+        "MIJIA_TOKEN"
+      ]
+    }
+  }
+}

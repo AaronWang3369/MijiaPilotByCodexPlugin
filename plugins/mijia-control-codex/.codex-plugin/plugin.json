@@ -1,0 +1,38 @@
+{
+  "name": "mijia-control-codex",
+  "version": "0.1.0",
+  "description": "Codex plugin that routes Xiaomi and Mijia smart-home work through mijia-control only.",
+  "author": {
+    "name": "Mijia Control Codex Plugin Contributors",
+    "url": "https://github.com/handsomejustin/mijia-control"
+  },
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "plugin",
+    "mcp",
+    "mijia",
+    "xiaomi",
+    "smart-home"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Mijia Control",
+    "shortDescription": "Control Xiaomi/Mijia devices only through mijia-control.",
+    "longDescription": "Adds a Codex skill and local MCP wiring for hands-off Xiaomi and Mijia smart-home operations through the upstream mijia-control project. The plugin does not store credentials or device identifiers.",
+    "developerName": "Mijia Control Codex Plugin Contributors",
+    "category": "Productivity",
+    "capabilities": [
+      "MCP",
+      "Smart Home",
+      "Local Tools"
+    ],
+    "defaultPrompt": [
+      "List my Mijia devices through mijia-control.",
+      "Check a Xiaomi device property safely.",
+      "Run a Mijia scene through the MCP server."
+    ],
+    "brandColor": "#0F766E"
+  }
+}
