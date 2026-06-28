@@ -31,6 +31,20 @@ It sets `MCP_TRANSPORT=stdio` and uses Codex MCP `env_vars` to forward `MIJIA_AP
 3. Install upstream with `pip install -e ".[mcp]"`.
 4. Launch Codex from an environment where that venv or Python installation is visible, or adapt `.mcp.json` locally to the venv Python path.
 
+If the target machine has no `python` on PATH, use the venv Python path printed by `scripts/setup-windows.ps1` and change the local MCP command from:
+
+```json
+"command": "python"
+```
+
+to a machine-local absolute path such as:
+
+```json
+"command": "C:\\Users\\Administrator\\mijia-control\\venv\\Scripts\\python.exe"
+```
+
+Do not commit machine-local paths to the public plugin repository.
+
 ## CLI Configuration
 
 The upstream CLI reads:

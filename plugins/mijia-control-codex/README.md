@@ -13,6 +13,7 @@ This plugin does not implement its own Xiaomi Cloud client, LAN protocol client,
 - `docs/`: installation, setup, verification, troubleshooting, security, privacy, and publishing notes.
 - `examples/`: sample commands and conversations.
 - `scripts/verify-plugin.mjs`: local structure and privacy validation.
+- `scripts/check-runtime.ps1` and `scripts/setup-windows.ps1`: Windows diagnostics and upstream runtime setup helpers.
 
 ## Upstream Facts Verified
 
@@ -62,6 +63,15 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -e ".[mcp]"
 ```
+
+Or use the plugin helper on Windows:
+
+```powershell
+cd plugins\mijia-control-codex
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows.ps1
+```
+
+This installs upstream `mijia-control` into `%USERPROFILE%\mijia-control\venv` and prints the venv Python path to use if Codex cannot find `python`.
 
 Start the upstream web service and complete upstream account/device setup:
 
@@ -128,6 +138,12 @@ The plugin declares this MCP server in `.mcp.json`:
 
 The `python` command must resolve to an environment where upstream `mijia-control` is installed. `env_vars` asks Codex to forward local `MIJIA_API_URL` and `MIJIA_TOKEN` into the stdio server process. If Codex cannot import `mcp_server`, install upstream into the Python environment Codex can see, or change the command to your venv Python in a local copy of the MCP config.
 
+Important: `codex plugin list` showing `mijia-control-codex@personal installed, enabled` only confirms that Codex installed this plugin. It does not install Python, upstream `mijia-control`, or your local Xiaomi/Mijia credentials. Run this on Windows to see what is missing:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\check-runtime.ps1
+```
+
 ## Use
 
 Ask Codex for Mijia work directly:
@@ -166,6 +182,8 @@ In this repository, the verification script checks:
 - marketplace entry points to the plugin directory.
 
 During local development, the upstream project was also installed into a temporary virtual environment with `pip install -e ".[mcp]"`. `mijia-control --help`, Python imports for `mcp_server` and `mijia_cli`, and an MCP stdio `initialize` plus `list_tools` session were verified. The MCP session returned 12 tools matching the upstream source.
+
+Version `0.1.1` adds Windows runtime diagnostics for machines where the Codex plugin is installed but Python or upstream `mijia-control` is missing.
 
 ## License
 

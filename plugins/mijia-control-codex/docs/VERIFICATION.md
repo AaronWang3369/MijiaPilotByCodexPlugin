@@ -26,6 +26,30 @@ This checks:
 - config templates do not contain obvious committed secrets.
 - marketplace entry points to `./plugins/mijia-control-codex`.
 
+## Windows Runtime Checks
+
+From the repository root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\check-runtime.ps1
+```
+
+Expected healthy output includes:
+
+```text
+[OK] git
+[OK] python
+[OK] mijia-control Python modules
+[OK] MIJIA_API_URL
+[OK] MIJIA_TOKEN
+```
+
+If Python or `mijia-control Python modules` is missing, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1
+```
+
 ## Codex Manifest Validator
 
 If available, run the Codex plugin creator validator:

@@ -8,6 +8,8 @@
 - A running upstream `mijia-control` web service.
 - A local JWT access token from the upstream service.
 
+`codex plugin list` showing this plugin as installed and enabled is not enough for device control. It only confirms Codex can load the plugin package. The machine also needs Python, upstream `mijia-control`, a running upstream web service, and local credentials.
+
 ## Install Upstream mijia-control
 
 ```bash
@@ -27,6 +29,15 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -e ".[mcp]"
 ```
+
+Windows helper:
+
+```powershell
+cd path\to\MijiaPilotByCodexPlugin
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1
+```
+
+The helper clones upstream `mijia-control` to `%USERPROFILE%\mijia-control`, creates a venv, installs `.[mcp]`, verifies imports, and prints the venv Python path.
 
 ## Configure Upstream
 
@@ -94,3 +105,13 @@ List my Mijia devices through mijia-control.
 ```
 
 Codex should use the `mijia-control` MCP server or upstream CLI. If it cannot start MCP, check `docs/TROUBLESHOOTING.md`.
+
+## Runtime Check
+
+On Windows, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\check-runtime.ps1
+```
+
+This reports whether Git, Python, upstream `mijia-control` imports, the CLI, `MIJIA_API_URL`, `MIJIA_TOKEN`, and API reachability are ready.
