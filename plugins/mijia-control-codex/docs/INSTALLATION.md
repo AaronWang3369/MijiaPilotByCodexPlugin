@@ -6,7 +6,7 @@
 - Python 3.10 or newer.
 - A local clone or installation of `handsomejustin/mijia-control`.
 - A running upstream `mijia-control` web service.
-- A local JWT access token from the upstream service.
+- A local JWT access token from the upstream service, either in `MIJIA_TOKEN` or in the CLI token file created by `mijia-control login`.
 
 `codex plugin list` showing this plugin as installed and enabled is not enough for device control. It only confirms Codex can load the plugin package. The machine also needs Python, upstream `mijia-control`, a running upstream web service, and local credentials.
 
@@ -114,7 +114,7 @@ On Windows, run:
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\check-runtime.ps1
 ```
 
-This reports whether Git, Python, upstream `mijia-control` imports, the CLI or default venv CLI, `MIJIA_API_URL`, `MIJIA_TOKEN`, and API reachability are ready.
+This reports whether Git, Python, upstream `mijia-control` imports, the CLI or default venv CLI, the effective API URL, a `MIJIA_TOKEN` or CLI token file, and API reachability are ready.
 
 If it reports missing Python or missing upstream modules, run:
 
@@ -122,4 +122,4 @@ If it reports missing Python or missing upstream modules, run:
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
 ```
 
-If it reports missing `MIJIA_API_URL`, `MIJIA_TOKEN`, or API reachability, install/start upstream `mijia-control`, log in, then set those variables in the environment that launches Codex.
+If it reports missing token or API reachability, install/start upstream `mijia-control`, log in with `mijia-control login`, then either rely on the CLI token file or set `MIJIA_TOKEN` in the environment that launches Codex.

@@ -8,13 +8,15 @@ The plugin itself stores no credentials. It ships only a template:
 config/mijia-control.env.example
 ```
 
-Required runtime variables:
+Runtime variables:
 
 ```bash
 MIJIA_API_URL=http://127.0.0.1:5000/api
 MIJIA_TOKEN=replace-with-local-jwt-access-token
 MCP_TRANSPORT=stdio
 ```
+
+`MIJIA_API_URL` defaults upstream to `http://127.0.0.1:5000/api`. `MIJIA_TOKEN` can be provided as an environment variable. On machines using the optional wrapper, the wrapper can reuse the token file created by `mijia-control login`.
 
 ## MCP Configuration
 
@@ -24,12 +26,12 @@ The plugin `.mcp.json` starts upstream `mcp_server` with:
 python -m mcp_server
 ```
 
-It sets `MCP_TRANSPORT=stdio` and uses Codex MCP `env_vars` to forward `MIJIA_API_URL` and `MIJIA_TOKEN` from the local environment. This requires that the `python` command used by Codex can import the upstream `mcp_server` package. The most reliable setup is:
+It sets `MCP_TRANSPORT=stdio` and uses Codex MCP `env_vars` to forward `MIJIA_API_URL` and `MIJIA_TOKEN` from the local environment when present. This requires that the `python` command used by Codex can import the upstream `mcp_server` package. The most reliable setup is:
 
 1. Clone upstream `mijia-control`.
 2. Create a venv.
 3. Install upstream with `pip install -e ".[mcp]"`.
-4. Launch Codex from an environment where that venv or Python installation is visible, or adapt `.mcp.json` locally to the venv Python path.
+4. Launch Codex from an environment where that venv or Python installation is visible, or add a machine-local MCP command that uses the venv Python path.
 
 If the target machine has no `python` on PATH, use the venv Python path printed by `scripts/setup-windows.ps1` and change the local MCP command from:
 
@@ -41,6 +43,12 @@ to a machine-local absolute path such as:
 
 ```json
 "command": "C:\\Users\\Administrator\\mijia-control\\venv\\Scripts\\python.exe"
+```
+
+On machines where the Codex process cannot see the venv Python, or where you want MCP to reuse the token created by `mijia-control login`, add a local MCP server that uses the optional wrapper with an absolute plugin path:
+
+```powershell
+codex mcp add mijia-control --env MCP_TRANSPORT=stdio --env MIJIA_API_URL=http://127.0.0.1:5000/api -- C:\Users\you\mijia-control\venv\Scripts\python.exe C:\path\to\plugin\scripts\mijia-mcp-wrapper.py
 ```
 
 Do not commit machine-local paths to the public plugin repository.

@@ -2,7 +2,8 @@ param(
   [string]$InstallDir = "$env:USERPROFILE\mijia-control",
   [string]$RepoUrl = "https://github.com/handsomejustin/mijia-control.git",
   [switch]$SkipClone,
-  [switch]$InstallPythonWithWinget
+  [switch]$InstallPythonWithWinget,
+  [string]$PluginDir = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 )
 
 $ErrorActionPreference = "Stop"
@@ -116,10 +117,14 @@ try {
   & $venvPython -c "import mcp_server, mijia_cli; print('mijia-control imports OK')"
 
   $escapedPython = $venvPython.Replace("\", "\\")
+  $wrapperPath = Join-Path $PluginDir "scripts\mijia-mcp-wrapper.py"
+  $escapedWrapper = $wrapperPath.Replace("\", "\\")
   Write-Host ""
   Write-Host "Upstream mijia-control MCP runtime is ready."
   Write-Host "Use this Python path for Codex MCP if plain 'python' is not on PATH:"
   Write-Host $venvPython
+  Write-Host "Use this wrapper path so MCP can reuse the token created by mijia-control login:"
+  Write-Host $wrapperPath
   Write-Host ""
   Write-Host "Local .mcp.json command override example:"
   Write-Host @"
@@ -128,9 +133,10 @@ try {
     "mijia-control": {
       "type": "stdio",
       "command": "$escapedPython",
-      "args": ["-m", "mcp_server"],
+      "args": ["$escapedWrapper"],
       "env": {
-        "MCP_TRANSPORT": "stdio"
+        "MCP_TRANSPORT": "stdio",
+        "MIJIA_API_URL": "http://127.0.0.1:5000/api"
       },
       "env_vars": ["MIJIA_API_URL", "MIJIA_TOKEN"]
     }
@@ -141,8 +147,8 @@ try {
   Write-Host "Next steps:"
   Write-Host "1. Start upstream web service from $InstallDir with: .\venv\Scripts\python.exe run.py"
   Write-Host "2. Log in with: .\venv\Scripts\mijia-control.exe login"
-  Write-Host "3. Set MIJIA_API_URL and MIJIA_TOKEN in the environment used by Codex."
-  Write-Host "4. Start a new Codex thread so plugin Skill/MCP config is loaded."
+  Write-Host "3. Start a new Codex thread so plugin Skill/MCP config is loaded."
+  Write-Host "4. If Codex still cannot start MCP, add a local MCP command with the printed venv Python and wrapper paths."
 } finally {
   Pop-Location
 }

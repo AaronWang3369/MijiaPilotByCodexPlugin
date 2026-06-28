@@ -13,6 +13,7 @@ This plugin does not implement its own Xiaomi Cloud client, LAN protocol client,
 - `docs/`: installation, setup, verification, troubleshooting, security, privacy, and publishing notes.
 - `examples/`: sample commands and conversations.
 - `scripts/verify-plugin.mjs`: local structure and privacy validation.
+- `scripts/mijia-mcp-wrapper.py`: optional local MCP wrapper that starts upstream MCP and reuses the local CLI token file when `MIJIA_TOKEN` is not set.
 - `scripts/check-runtime.ps1` and `scripts/setup-windows.ps1`: Windows diagnostics and upstream runtime setup helpers.
 
 ## Upstream Facts Verified
@@ -136,7 +137,9 @@ The plugin declares this MCP server in `.mcp.json`:
 }
 ```
 
-The `python` command must resolve to an environment where upstream `mijia-control` is installed. `env_vars` asks Codex to forward local `MIJIA_API_URL` and `MIJIA_TOKEN` into the stdio server process. If Codex cannot import `mcp_server`, install upstream into the Python environment Codex can see, or change the command to your venv Python in a local copy of the MCP config.
+The `python` command must resolve to an environment where upstream `mijia-control` is installed. `env_vars` asks Codex to forward local `MIJIA_API_URL` and `MIJIA_TOKEN` into the stdio server process. If Codex cannot import `mcp_server`, install upstream into the Python environment Codex can see, or configure a machine-local MCP command that uses your venv Python.
+
+On Windows, the helper also prints a local MCP override using `scripts/mijia-mcp-wrapper.py`. That wrapper is optional. It still starts upstream `mcp_server`, but it can reuse the token file written by `mijia-control login` at `~/.config/mijia-control/token.json` when `MIJIA_TOKEN` is not set.
 
 Important: `codex plugin list` showing `mijia-control-codex@personal installed, enabled` only confirms that Codex installed this plugin. It does not install Python, upstream `mijia-control`, or your local Xiaomi/Mijia credentials. Run this on Windows to see what is missing:
 
@@ -150,7 +153,7 @@ If the output reports missing Python or missing upstream modules, run:
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
 ```
 
-Then run `check-runtime.ps1` again. A plugin can be installed and enabled while device listing still fails if `MIJIA_API_URL`, `MIJIA_TOKEN`, or the upstream web service are not ready.
+Then run `check-runtime.ps1` again. A plugin can be installed and enabled while device listing still fails if the upstream web service is not running, no CLI token or `MIJIA_TOKEN` exists, or no Xiaomi account/devices have been bound in upstream `mijia-control`.
 
 ## Use
 
@@ -191,7 +194,7 @@ In this repository, the verification script checks:
 
 During local development, the upstream project was also installed into a temporary virtual environment with `pip install -e ".[mcp]"`. `mijia-control --help`, Python imports for `mcp_server` and `mijia_cli`, and an MCP stdio `initialize` plus `list_tools` session were verified. The MCP session returned 12 tools matching the upstream source.
 
-Version `0.1.2` improves Windows runtime bootstrap for machines where the Codex plugin is installed but Python, upstream `mijia-control`, the default venv, API environment variables, or the upstream web service are missing. It also keeps the local verifier tolerant of CRLF line endings in skill frontmatter.
+Version `0.1.3` improves Windows runtime detection by preferring the default upstream venv, treating the upstream default API URL as valid, and adding an optional MCP wrapper that can reuse the CLI token file created by `mijia-control login`. It also keeps the local verifier tolerant of CRLF line endings in skill frontmatter.
 
 ## License
 

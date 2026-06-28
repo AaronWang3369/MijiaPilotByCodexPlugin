@@ -35,6 +35,14 @@ export MCP_TRANSPORT=stdio
 python -m mcp_server
 ```
 
+Optional wrapper that reuses the token file created by `mijia-control login`:
+
+```bash
+export MIJIA_API_URL=http://127.0.0.1:5000/api
+export MCP_TRANSPORT=stdio
+python scripts/mijia-mcp-wrapper.py
+```
+
 Windows PowerShell:
 
 ```powershell

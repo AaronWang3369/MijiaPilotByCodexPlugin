@@ -49,6 +49,16 @@ function Find-Python {
     }
   }
 
+  if ($InstallDir) {
+    $venvPython = Join-Path $InstallDir "venv\Scripts\python.exe"
+    if (Test-Path -LiteralPath $venvPython) {
+      $result = Test-Python -Command (Resolve-Path -LiteralPath $venvPython).Path
+      if ($result) {
+        return $result
+      }
+    }
+  }
+
   $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
   if ($pythonCommand) {
     $result = Test-Python -Command $pythonCommand.Source
@@ -114,6 +124,32 @@ function Find-MijiaCli {
   return $null
 }
 
+function Get-MijiaTokenInfo {
+  if ($env:MIJIA_TOKEN) {
+    return @{
+      Source = "MIJIA_TOKEN environment variable"
+      Token = $env:MIJIA_TOKEN
+    }
+  }
+
+  $tokenFile = Join-Path $env:USERPROFILE ".config\mijia-control\token.json"
+  if (Test-Path -LiteralPath $tokenFile) {
+    try {
+      $data = Get-Content -Raw -LiteralPath $tokenFile | ConvertFrom-Json
+      if ($data.token) {
+        return @{
+          Source = $tokenFile
+          Token = [string]$data.token
+        }
+      }
+    } catch {
+      return $null
+    }
+  }
+
+  return $null
+}
+
 $gitCommand = Get-Command git -ErrorAction SilentlyContinue
 Write-Check "git" ([bool]$gitCommand) ($(if ($gitCommand) { $gitCommand.Source } else { "Install Git for Windows or run winget install -e --id Git.Git" }))
 
@@ -131,24 +167,25 @@ if ($pythonPath) {
 $mijiaCli = Find-MijiaCli
 Write-Check "mijia-control CLI" ([bool]$mijiaCli) ($(if ($mijiaCli) { if ($mijiaCli.OnPath) { "$($mijiaCli.Path) (on PATH)" } else { "$($mijiaCli.Path) (not on PATH; use this absolute path or activate the venv)" } } else { "Install upstream with scripts\setup-windows.ps1 or pip install -e `".[mcp]`"" }))
 
-Write-Check "MIJIA_API_URL" ([bool]$ApiUrl) ($(if ($ApiUrl) { $ApiUrl } else { "Set to upstream API, e.g. http://127.0.0.1:5000/api" }))
-Write-Check "MIJIA_TOKEN" ([bool]$env:MIJIA_TOKEN) ($(if ($env:MIJIA_TOKEN) { "set" } else { "not set; obtain with mijia-control login or upstream JWT API" }))
+$effectiveApiUrl = if ($ApiUrl) { $ApiUrl } else { "http://127.0.0.1:5000/api" }
+Write-Check "MIJIA_API_URL" $true ($(if ($ApiUrl) { $ApiUrl } else { "using upstream default $effectiveApiUrl" }))
 
-if ($ApiUrl) {
-  try {
-    $healthUrl = $ApiUrl.TrimEnd("/") + "/auth/me"
-    $headers = @{}
-    if ($env:MIJIA_TOKEN) {
-      $headers["Authorization"] = "Bearer $env:MIJIA_TOKEN"
-    }
-    Invoke-WebRequest -Uri $healthUrl -Headers $headers -Method GET -TimeoutSec 5 | Out-Null
-    Write-Check "mijia-control API reachability" $true $healthUrl
-  } catch {
-    $response = $_.Exception.Response
-    if ($response -and $response.StatusCode) {
-      Write-Check "mijia-control API reachability" $true "$healthUrl returned HTTP $([int]$response.StatusCode), so the service is reachable"
-    } else {
-      Write-Check "mijia-control API reachability" $false "Could not connect to $healthUrl. The web service may be stopped."
-    }
+$tokenInfo = Get-MijiaTokenInfo
+Write-Check "MIJIA_TOKEN or CLI token" ([bool]$tokenInfo) ($(if ($tokenInfo) { "available from $($tokenInfo.Source)" } else { "not set; obtain with mijia-control login or upstream JWT API" }))
+
+try {
+  $healthUrl = $effectiveApiUrl.TrimEnd("/") + "/auth/me"
+  $headers = @{}
+  if ($tokenInfo -and $tokenInfo.Token) {
+    $headers["Authorization"] = "Bearer $($tokenInfo.Token)"
+  }
+  Invoke-WebRequest -Uri $healthUrl -Headers $headers -Method GET -TimeoutSec 5 | Out-Null
+  Write-Check "mijia-control API reachability" $true $healthUrl
+} catch {
+  $response = $_.Exception.Response
+  if ($response -and $response.StatusCode) {
+    Write-Check "mijia-control API reachability" $true "$healthUrl returned HTTP $([int]$response.StatusCode), so the service is reachable"
+  } else {
+    Write-Check "mijia-control API reachability" $false "Could not connect to $healthUrl. The web service may be stopped."
   }
 }

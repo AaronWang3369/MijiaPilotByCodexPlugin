@@ -93,18 +93,18 @@ Required environment:
 
 ```bash
 MIJIA_API_URL=http://127.0.0.1:5000/api
-MIJIA_TOKEN=<local-jwt-access-token>
 MCP_TRANSPORT=stdio
 ```
 
-The upstream Flask service must already be running and reachable at `MIJIA_API_URL`.
+The upstream MCP server reads `MIJIA_TOKEN` from the environment. On machines configured with the optional `scripts/mijia-mcp-wrapper.py`, the wrapper can reuse the upstream CLI token file created by `mijia-control login` at `~/.config/mijia-control/token.json`. The upstream Flask service must already be running and reachable at `MIJIA_API_URL`.
 
 ## Failure Handling
 
 - If `mijia-control` is missing, tell the user to install upstream with `pip install -e ".[mcp]"` from a local clone.
 - On Windows, if `python`, `%USERPROFILE%\mijia-control\venv`, or `mcp_server` is missing, run `powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget` from the plugin repository root, then run `scripts\check-runtime.ps1`.
 - If plain `python` is missing but `%USERPROFILE%\mijia-control\venv\Scripts\python.exe` exists, point the local `.mcp.json` command at that venv Python path.
-- If `MIJIA_API_URL` or `MIJIA_TOKEN` is missing, explain that the user must start upstream `mijia-control`, log in locally, and provide those values in the environment used by Codex.
+- If `MIJIA_TOKEN` is missing but the CLI token file exists, use the plugin wrapper or upstream CLI rather than asking the user to paste token values.
+- If neither `MIJIA_TOKEN` nor the CLI token file exists, explain that the user must start upstream `mijia-control` and log in locally.
 - If the MCP server starts but tool calls fail with authentication errors, ask the user to refresh `MIJIA_TOKEN` through `mijia-control login`.
 - If device-changing calls fail, inspect device detail and supported properties/actions through `get_device` before retrying.
 - If real devices or a Xiaomi account are unavailable, report that real-device verification is not possible instead of claiming success.

@@ -18,6 +18,7 @@ Required files:
 - `docs/`
 - `examples/`
 - `config/mijia-control.env.example`
+- `scripts/mijia-mcp-wrapper.py`
 - `scripts/verify-plugin.mjs`
 
 ## Marketplace Entry

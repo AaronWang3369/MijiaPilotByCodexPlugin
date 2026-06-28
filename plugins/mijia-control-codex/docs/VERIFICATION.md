@@ -43,7 +43,7 @@ Expected healthy output includes:
 [OK] python
 [OK] mijia-control Python modules
 [OK] MIJIA_API_URL
-[OK] MIJIA_TOKEN
+[OK] MIJIA_TOKEN or CLI token
 ```
 
 If Python or `mijia-control Python modules` is missing, run:
@@ -52,7 +52,7 @@ If Python or `mijia-control Python modules` is missing, run:
 powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\setup-windows.ps1 -InstallPythonWithWinget
 ```
 
-`check-runtime.ps1` intentionally separates plugin/runtime readiness from real device readiness. A machine may pass Git, Python, module, and CLI checks while still reporting missing `MIJIA_API_URL`, missing `MIJIA_TOKEN`, or unreachable API until the upstream Flask service is started and the user logs in locally.
+`check-runtime.ps1` intentionally separates plugin/runtime readiness from real device readiness. A machine may pass Git, Python, module, CLI, API URL, and token checks while still reporting unreachable API until the upstream Flask service is started. The token check accepts either `MIJIA_TOKEN` or the CLI token file created by `mijia-control login`.
 
 For CI or a controlled local check where the upstream package is installed in a venv that is not on PATH, pass the expected Python path:
 
@@ -86,6 +86,12 @@ python -m mcp_server
 ```
 
 The second command starts a stdio MCP server and waits for MCP input. Stop it with `Ctrl+C` after confirming it starts.
+
+For the optional wrapper that can reuse the CLI token file:
+
+```bash
+python scripts/mijia-mcp-wrapper.py
+```
 
 For a stronger local MCP check, use the MCP Python SDK to initialize a stdio client session and list tools. The expected tool names are:
 

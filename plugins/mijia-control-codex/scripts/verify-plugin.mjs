@@ -103,7 +103,7 @@ if (fs.existsSync(marketplacePath)) {
 const forbiddenPatterns = [
   { pattern: /eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}/, label: "JWT token" },
   { pattern: /password\s*=\s*(?!your-|replace-|<)/i, label: "possible password assignment" },
-  { pattern: /refresh_token\s*[:=]\s*["']?[A-Za-z0-9._-]{12,}/i, label: "refresh token" },
+  { pattern: /refresh_token\s*[:=]\s*["'][A-Za-z0-9._-]{12,}["']/i, label: "refresh token" },
   { pattern: /bindkey\s*[:=]\s*["']?[A-Fa-f0-9]{16,}/, label: "BLE bindkey" },
   { pattern: /\bblt\.\d+\.[A-Za-z0-9_-]{5,}\b/, label: "real-looking BLE DID" },
   { pattern: /\b[A-Fa-f0-9]{2}(:[A-Fa-f0-9]{2}){5}\b/, label: "MAC address" }

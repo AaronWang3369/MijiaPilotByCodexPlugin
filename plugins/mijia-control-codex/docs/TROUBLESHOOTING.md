@@ -39,10 +39,15 @@ cd $env:USERPROFILE\mijia-control
 .\venv\Scripts\python.exe run.py
 ```
 
-Then log in and set local environment variables:
+Then log in. The plugin wrapper can reuse the CLI token file created by this command:
 
 ```powershell
 .\venv\Scripts\mijia-control.exe login
+```
+
+If you prefer environment variables instead of the CLI token file, set them in the environment that launches Codex:
+
+```powershell
 $env:MIJIA_API_URL = "http://127.0.0.1:5000/api"
 $env:MIJIA_TOKEN = "replace-with-local-jwt-access-token"
 ```
@@ -88,6 +93,12 @@ powershell -ExecutionPolicy Bypass -File .\plugins\mijia-control-codex\scripts\s
 ```
 
 The helper verifies that Python can actually execute `import sys` and has version 3.10 or newer. It also checks common Python install paths if PATH still points at a stub.
+
+If Python is installed but the current Codex process still sees only `C:\Users\<you>\AppData\Local\Microsoft\WindowsApps\python.exe`, restart Codex after installing Python or add a local MCP server that points directly at the upstream venv Python:
+
+```powershell
+codex mcp add mijia-control --env MCP_TRANSPORT=stdio --env MIJIA_API_URL=http://127.0.0.1:5000/api -- C:\Users\<you>\mijia-control\venv\Scripts\python.exe C:\path\to\plugin\scripts\mijia-mcp-wrapper.py
+```
 
 ## Authentication Errors
 
