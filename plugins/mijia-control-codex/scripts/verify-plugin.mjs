@@ -91,7 +91,10 @@ const serviceHelper = readText("scripts/ensure_mijia_service.py");
 if (serviceHelper) {
   assert(serviceHelper.includes("MIJIA_CONTROL_AUTOSTART"), "service helper must support MIJIA_CONTROL_AUTOSTART");
   assert(serviceHelper.includes("MIJIA_CONTROL_DIR"), "service helper must support MIJIA_CONTROL_DIR");
-  assert(serviceHelper.includes("run.py"), "service helper must start the upstream run.py entry point");
+  assert(serviceHelper.includes("pythonw.exe"), "service helper must prefer pythonw.exe on Windows");
+  assert(serviceHelper.includes("CREATE_NO_WINDOW"), "service helper must avoid visible Windows consoles");
+  assert(serviceHelper.includes("use_reloader=False"), "service helper must disable Flask reloader");
+  assert(serviceHelper.includes("mijia-control-service.lock"), "service helper must serialize service startup");
 }
 
 const marketplacePath = path.join(repoRoot, ".agents", "plugins", "marketplace.json");

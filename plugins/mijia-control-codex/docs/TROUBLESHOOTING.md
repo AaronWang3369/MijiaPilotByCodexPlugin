@@ -156,6 +156,24 @@ $env:MIJIA_API_URL
 
 If you intentionally run a remote upstream service, the helper will not start a local service for that URL. Confirm the remote service separately.
 
+## Windows Opens Blank Python Terminal Windows
+
+Symptom: several blank Windows Terminal tabs or windows open with a title like:
+
+```text
+C:\Users\<you>\mijia-control\venv\Scripts\python.exe
+```
+
+Cause: an older autostart helper launched upstream `python run.py` with `python.exe`, and Flask debug/reloader behavior spawned extra child processes.
+
+Fix:
+
+1. Close the blank terminal windows, or stop stale local helper processes.
+2. Update to plugin version `0.1.5` or newer.
+3. Start a new Codex thread so the updated wrapper is used.
+
+The fixed helper starts the local service through `pythonw.exe` when available, disables Flask reloader startup, and uses a lock so parallel MCP sessions do not create duplicate service processes.
+
 ## Device IDs Or Property Names Are Unknown
 
 Do not guess. Discover them through upstream:

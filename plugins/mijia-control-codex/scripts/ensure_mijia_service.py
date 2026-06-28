@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import time
+from contextlib import suppress
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
@@ -19,6 +20,7 @@ from urllib.request import Request, urlopen
 
 DEFAULT_API_URL = "http://127.0.0.1:5000/api"
 FALSE_VALUES = {"0", "false", "no", "off"}
+LOCK_STALE_SECONDS = 60
 
 
 def _emit(message: str, *, quiet: bool, stream) -> None:
@@ -139,6 +141,20 @@ def find_upstream_python(root: Path) -> str:
     return sys.executable
 
 
+def _background_python(python: str) -> str:
+    if os.name != "nt":
+        return python
+
+    python_path = Path(python)
+    if python_path.name.lower() != "python.exe":
+        return python
+
+    pythonw = python_path.with_name("pythonw.exe")
+    if pythonw.is_file():
+        return str(pythonw)
+    return python
+
+
 def _state_dir() -> Path:
     explicit = os.environ.get("MIJIA_CONTROL_CODEX_STATE_DIR")
     if explicit:
@@ -152,18 +168,89 @@ def _state_dir() -> Path:
     return Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state")) / "mijia-control-codex"
 
 
+def _is_pid_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            result = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+                check=False,
+                capture_output=True,
+                text=True,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except OSError:
+            return False
+        return str(pid) in result.stdout
+
+    with suppress(OSError):
+        os.kill(pid, 0)
+        return True
+    return False
+
+
+def _read_pid(pid_path: Path) -> int | None:
+    try:
+        return int(pid_path.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return None
+
+
+def _acquire_start_lock(lock_path: Path) -> bool:
+    now = time.time()
+    if lock_path.exists():
+        with suppress(OSError):
+            if now - lock_path.stat().st_mtime > LOCK_STALE_SECONDS:
+                lock_path.unlink()
+
+    try:
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        return False
+
+    with os.fdopen(fd, "w", encoding="utf-8") as lock_file:
+        lock_file.write(str(os.getpid()))
+    return True
+
+
+def _release_start_lock(lock_path: Path) -> None:
+    with suppress(OSError):
+        lock_path.unlink()
+
+
+def _write_launcher(state_dir: Path) -> Path:
+    launcher = state_dir / "run_service_no_reloader.py"
+    launcher.write_text(
+        """import os\n"""
+        """import sys\n\n"""
+        """sys.path.insert(0, os.getcwd())\n\n"""
+        """from app import create_app\n"""
+        """from app.extensions import socketio\n\n"""
+        """app = create_app()\n"""
+        """socketio.run(app, host='127.0.0.1', port=5000, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)\n""",
+        encoding="utf-8",
+    )
+    return launcher
+
+
 def start_service(root: Path, python: str) -> tuple[int, Path]:
     state_dir = _state_dir()
     state_dir.mkdir(parents=True, exist_ok=True)
     log_path = state_dir / "mijia-control-service.log"
     pid_path = state_dir / "mijia-control-service.pid"
+    launcher_path = _write_launcher(state_dir)
+    background_python = _background_python(python)
 
     env = os.environ.copy()
     env.setdefault("PYTHONIOENCODING", "utf-8")
+    env["FLASK_ENV"] = "production"
+    env["FLASK_DEBUG"] = "0"
 
     creationflags = 0
     start_new_session = False
     if os.name == "nt":
+        creationflags |= getattr(subprocess, "CREATE_NO_WINDOW", 0)
         creationflags |= getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
         creationflags |= getattr(subprocess, "DETACHED_PROCESS", 0)
     else:
@@ -171,7 +258,7 @@ def start_service(root: Path, python: str) -> tuple[int, Path]:
 
     with log_path.open("ab") as log_file:
         process = subprocess.Popen(
-            [python, "run.py"],
+            [background_python, str(launcher_path)],
             cwd=str(root),
             env=env,
             stdin=subprocess.DEVNULL,
@@ -216,34 +303,53 @@ def ensure_service(
         )
         return False
 
-    root = find_upstream_root()
-    if not root:
+    state_dir = _state_dir()
+    state_dir.mkdir(parents=True, exist_ok=True)
+    pid_path = state_dir / "mijia-control-service.pid"
+    lock_path = state_dir / "mijia-control-service.lock"
+
+    lock_acquired = False
+    log_path = state_dir / "mijia-control-service.log"
+
+    try:
+        existing_pid = _read_pid(pid_path)
+        if existing_pid and _is_pid_running(existing_pid):
+            _emit(f"mijia-control service process {existing_pid} is starting.", quiet=quiet, stream=stream)
+        elif _acquire_start_lock(lock_path):
+            lock_acquired = True
+            root = find_upstream_root()
+            if not root:
+                _emit(
+                    "Could not find upstream mijia-control root. Set MIJIA_CONTROL_DIR to the directory containing run.py.",
+                    quiet=quiet,
+                    stream=stream,
+                )
+                return False
+
+            python = find_upstream_python(root)
+            pid, log_path = start_service(root, python)
+            _emit(f"Started mijia-control service process {pid} from {root}.", quiet=quiet, stream=stream)
+            _emit(f"Service log: {log_path}", quiet=quiet, stream=stream)
+        else:
+            _emit("Another mijia-control startup is already in progress.", quiet=quiet, stream=stream)
+
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            ok, detail = service_reachable(effective_api_url)
+            if ok:
+                _emit(f"mijia-control service is reachable: {detail}", quiet=quiet, stream=stream)
+                return True
+            time.sleep(0.5)
+
         _emit(
-            "Could not find upstream mijia-control root. Set MIJIA_CONTROL_DIR to the directory containing run.py.",
+            f"Timed out waiting for mijia-control service at {effective_api_url}. Check {log_path}.",
             quiet=quiet,
             stream=stream,
         )
         return False
-
-    python = find_upstream_python(root)
-    pid, log_path = start_service(root, python)
-    _emit(f"Started mijia-control service process {pid} from {root}.", quiet=quiet, stream=stream)
-    _emit(f"Service log: {log_path}", quiet=quiet, stream=stream)
-
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        ok, detail = service_reachable(effective_api_url)
-        if ok:
-            _emit(f"mijia-control service is reachable: {detail}", quiet=quiet, stream=stream)
-            return True
-        time.sleep(0.5)
-
-    _emit(
-        f"Timed out waiting for mijia-control service at {effective_api_url}. Check {log_path}.",
-        quiet=quiet,
-        stream=stream,
-    )
-    return False
+    finally:
+        if lock_acquired:
+            _release_start_lock(lock_path)
 
 
 def main() -> int:

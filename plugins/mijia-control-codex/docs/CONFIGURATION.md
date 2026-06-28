@@ -75,6 +75,8 @@ Configuration:
 
 The helper starts a service only for local API URLs such as `http://127.0.0.1:5000/api` or `http://localhost:5000/api`. For remote `MIJIA_API_URL` values, it only checks reachability.
 
+On Windows, the helper uses `pythonw.exe` when available, adds a startup lock, and starts a small generated launcher with Flask `use_reloader=False`. This avoids the visible terminal windows and duplicate child processes created by running upstream `python run.py` directly from an MCP session.
+
 ## CLI Configuration
 
 The upstream CLI reads:

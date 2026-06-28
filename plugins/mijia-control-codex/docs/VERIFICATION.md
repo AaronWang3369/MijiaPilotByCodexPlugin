@@ -76,6 +76,8 @@ mijia-control service is reachable
 
 If the service is stopped, the helper should find a local upstream checkout and start `python run.py` in the background. It writes the service PID and log file under the local user state directory. This validates local service startup only; it does not validate real Xiaomi account binding or device control.
 
+On Windows, verify that the listening process is `pythonw.exe` and that no visible terminal windows open. The helper uses a generated no-reloader launcher instead of invoking upstream `run.py` directly.
+
 ## Codex Manifest Validator
 
 If available, run the Codex plugin creator validator:

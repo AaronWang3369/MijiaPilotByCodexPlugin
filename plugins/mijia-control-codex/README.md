@@ -13,7 +13,7 @@ This plugin does not implement its own Xiaomi Cloud client, LAN protocol client,
 - `docs/`: installation, setup, verification, troubleshooting, security, privacy, and publishing notes.
 - `examples/`: sample commands and conversations.
 - `scripts/verify-plugin.mjs`: local structure and privacy validation.
-- `scripts/ensure_mijia_service.py`: local helper that checks and starts the upstream `mijia-control` Flask service.
+- `scripts/ensure_mijia_service.py`: local helper that checks and starts the upstream `mijia-control` Flask service without opening Windows console windows.
 - `scripts/mijia-mcp-wrapper.py`: optional local MCP wrapper that starts the upstream service if needed, starts upstream MCP, and reuses the local CLI token file when `MIJIA_TOKEN` is not set.
 - `scripts/check-runtime.ps1` and `scripts/setup-windows.ps1`: Windows diagnostics and upstream runtime setup helpers.
 
@@ -156,7 +156,7 @@ MIJIA_CONTROL_PYTHON=/path/to/mijia-control/venv/bin/python
 MIJIA_CONTROL_AUTOSTART=0
 ```
 
-`MIJIA_CONTROL_AUTOSTART=0` disables automatic startup. The helper only starts a local service when `MIJIA_API_URL` points to localhost.
+`MIJIA_CONTROL_AUTOSTART=0` disables automatic startup. The helper only starts a local service when `MIJIA_API_URL` points to localhost. On Windows it uses `pythonw.exe`, disables the Flask debug reloader, and serializes startup so parallel MCP sessions do not open multiple terminal windows.
 
 Important: `codex plugin list` showing `mijia-control-codex@personal installed, enabled` only confirms that Codex installed this plugin. It does not install Python, upstream `mijia-control`, or your local Xiaomi/Mijia credentials. Run this on Windows to see what is missing:
 
@@ -211,7 +211,7 @@ In this repository, the verification script checks:
 
 During local development, the upstream project was also installed into a temporary virtual environment with `pip install -e ".[mcp]"`. `mijia-control --help`, Python imports for `mcp_server` and `mijia_cli`, and an MCP stdio `initialize` plus `list_tools` session were verified. The MCP session returned 12 tools matching the upstream source.
 
-Version `0.1.4` adds local upstream service autostart through `scripts/ensure_mijia_service.py` and updates the optional MCP wrapper so Codex can bring up the upstream Flask service before using MCP.
+Version `0.1.5` keeps local upstream service autostart but changes Windows startup to no-window `pythonw.exe`, disables Flask reloader behavior, and prevents parallel MCP sessions from starting duplicate service processes.
 
 ## License
 
